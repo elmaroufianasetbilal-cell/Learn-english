@@ -1,0 +1,317 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init(); // إعداد الإشعارات
+  runApp(const EnglishEasyApp());
+}
+
+/// ================= APP =================
+class EnglishEasyApp extends StatelessWidget {
+  const EnglishEasyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'English Easy',
+      theme: ThemeData(
+        primarySwatch: Colors.teal,
+        scaffoldBackgroundColor: const Color(0xFFE0F2F1),
+      ),
+      home: const LoginScreen(),
+    );
+  }
+}
+
+/// ================= NOTIFICATION SERVICE =================
+class NotificationService {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  Future<void> init() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> showDailyNotification({required int hour, required int minute}) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails('daily_id', 'Daily Notification',
+            channelDescription: 'Daily reminder to learn English',
+            importance: Importance.max,
+            priority: Priority.high);
+
+    const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0,
+      'English Easy',
+      'وقت تعلم اللغة! 🌟',
+      _nextInstanceOfTime(hour, minute),
+      details,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+}
+
+/// ================= LOGIN SCREEN =================
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/forest_background.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "English Easy",
+                style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.login),
+                label: const Text("Login with Google"),
+                onPressed: () {
+                  // TODO: Implement Google Sign-In
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const HomeScreen()));
+                },
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.login),
+                label: const Text("Login with Facebook"),
+                onPressed: () {
+                  // TODO: Implement Facebook Sign-In
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const HomeScreen()));
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ================= HOME SCREEN =================
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: PageView(
+        children: const [
+          SettingsPlace(),
+          LevelsPlace(),
+          LibraryPlace(),
+          SubscriptionPlace(),
+        ],
+      ),
+    );
+  }
+}
+
+/// ================= SETTINGS =================
+class SettingsPlace extends StatelessWidget {
+  const SettingsPlace({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/lake_background.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Center(
+        child: ElevatedButton(
+          child: const Text("Set Daily Reminder at 4 PM"),
+          onPressed: () {
+            NotificationService().showDailyNotification(hour: 16, minute: 0);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Notification set at 4 PM")),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// ================= LEVELS =================
+class LevelsPlace extends StatelessWidget {
+  const LevelsPlace({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 30,
+      itemBuilder: (_, index) {
+        return Card(
+          child: ListTile(
+            title: Text("Level ${index + 1}"),
+            subtitle: const Text("A 3-week journey through stories and words"),
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => LevelDetailScreen(level: index + 1)));
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// ================= LEVEL DETAIL =================
+class LevelDetailScreen extends StatelessWidget {
+  final int level;
+  const LevelDetailScreen({super.key, required this.level});
+
+  final List<String> sampleStory = const [
+    "Success comes from continuous effort and focus.",
+    "Patience and discipline are the keys to mastery.",
+  ];
+
+  final Map<String, String> translations = const {
+    "Success": "نجاح",
+    "comes": "يأتي",
+    "from": "من",
+    "continuous": "مستمر",
+    "effort": "جهد",
+    "Patience": "صبر",
+    "and": "و",
+    "discipline": "انضباط",
+    "are": "هي",
+    "the": "ال",
+    "keys": "مفاتيح",
+    "to": "لـ",
+    "mastery": "إتقان",
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Level $level")),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: sampleStory.length,
+        itemBuilder: (_, idx) {
+          final sentence = sampleStory[idx];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Wrap(
+              spacing: 6,
+              children: sentence.split(" ").map((word) {
+                String clean = word.replaceAll(".", "");
+                return GestureDetector(
+                  onTap: () {
+                    if (translations.containsKey(clean)) {
+                      showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                                title: Text(clean),
+                                content: Text(translations[clean]!),
+                              ));
+                    }
+                  },
+                  child: Text(
+                    "$word ",
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// ================= LIBRARY =================
+class LibraryPlace extends StatelessWidget {
+  const LibraryPlace({super.key});
+
+  final List<String> books = const [
+    "Rich Dad Poor Dad",
+    "The Alchemist",
+    "Think and Grow Rich",
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: books.length,
+      itemBuilder: (_, idx) {
+        return Card(
+          child: ListTile(
+            title: Text(books[idx]),
+            onTap: () {
+              // TODO: Open book details / reading page
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// ================= SUBSCRIPTION =================
+class SubscriptionPlace extends StatelessWidget {
+  const SubscriptionPlace({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+        child: const Text("Subscribe for extra features"),
+        onPressed: () {
+          // TODO: Implement subscription
+        },
+      ),
+    );
+  }
+}
